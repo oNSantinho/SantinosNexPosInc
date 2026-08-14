@@ -1,0 +1,36 @@
+import React, { useState } from 'react';
+import { Sidebar } from '../modules/dashboard/Sidebar';
+import { Header } from '../modules/dashboard/Header';
+import { POSModule } from '../modules/pos/POSModule';
+import { StockModule } from '../modules/stock/StockModule';
+import { SuppliersModule } from '../modules/suppliers/SuppliersModule';
+import { FinanceModule } from '../modules/finance/FinanceModule';
+import { UsersModule } from '../modules/users/UsersModule';
+import { useAppStore } from '../store/useAppStore';
+
+export const App: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<string>('pos');
+  const { currentUser } = useAppStore();
+
+  const canAccessUsers = currentUser.role === 'ADMIN' || currentUser.role === 'MANAGER';
+
+  return (
+    <div className="flex min-h-screen bg-slate-950 text-slate-100 font-['Plus_Jakarta_Sans',sans-serif]">
+      {/* Sidebar */}
+      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0">
+        <Header activeTab={activeTab} setActiveTab={setActiveTab} />
+
+        <main className="flex-1 overflow-y-auto">
+          {activeTab === 'pos' && <POSModule />}
+          {activeTab === 'stock' && <StockModule />}
+          {activeTab === 'suppliers' && <SuppliersModule />}
+          {activeTab === 'finance' && <FinanceModule />}
+          {activeTab === 'users' && (canAccessUsers ? <UsersModule /> : <POSModule />)}
+        </main>
+      </div>
+    </div>
+  );
+};
