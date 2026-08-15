@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { RoleBadge } from '../auth/RoleBadge';
+import { PasswordPromptModal } from '../auth/PasswordPromptModal';
 import { UserCheck, Wallet, Lock, User as UserIcon, RefreshCw } from 'lucide-react';
 
 interface HeaderProps {
@@ -11,8 +12,25 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
   const { currentUser, users, setCurrentUser, currentCashSession } = useAppStore();
   const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [pendingUser, setPendingUser] = useState<any | null>(null);
 
   const isCashOpen = currentCashSession?.status === 'OPEN';
+
+  const handleSelectUser = (u: any) => {
+    if (u.id === currentUser.id) {
+      setShowUserDropdown(false);
+      return;
+    }
+
+    // Require password for ADMIN and MANAGER
+    if (u.role === 'ADMIN' || u.role === 'MANAGER') {
+      setShowUserDropdown(false);
+      setPendingUser(u);
+    } else {
+      setCurrentUser(u);
+      setShowUserDropdown(false);
+    }
+  };
 
   return (
     <header className="h-16 border-b border-slate-800 bg-slate-900/80 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-30">
@@ -97,13 +115,11 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
                 <div className="space-y-1.5">
                   {users.map((u) => {
                     const isSelected = currentUser.id === u.id;
+                    const requiresPassword = u.role === 'ADMIN' || u.role === 'MANAGER';
                     return (
                       <button
                         key={u.id}
-                        onClick={() => {
-                          setCurrentUser(u);
-                          setShowUserDropdown(false);
-                        }}
+                        onClick={() => handleSelectUser(u)}
                         className={`w-full flex items-center justify-between p-2.5 rounded-xl text-left transition-all group ${
                           isSelected
                             ? 'bg-indigo-600/20 border border-indigo-500/40 text-white shadow-md shadow-indigo-600/10'
@@ -125,6 +141,9 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
                           <div className="min-w-0 flex-1">
                             <p className="text-xs font-bold text-white truncate flex items-center gap-1.5">
                               {u.name}
+                              {requiresPassword && (
+                                <Lock className="w-3 h-3 text-amber-400 shrink-0" />
+                              )}
                               {isSelected && (
                                 <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />
                               )}
@@ -143,6 +162,18 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
           )}
         </div>
       </div>
+
+      {/* Password verification prompt modal */}
+      {pendingUser && (
+        <PasswordPromptModal
+          targetUser={pendingUser}
+          onSuccess={() => {
+            setCurrentUser(pendingUser);
+            setPendingUser(null);
+          }}
+          onCancel={() => setPendingUser(null)}
+        />
+      )}
     </header>
   );
 };

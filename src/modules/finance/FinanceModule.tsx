@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
+import { exportCashSessionToExcel } from '../../shared/excelExporter';
 import { 
   Wallet, 
   ArrowUpRight, 
@@ -14,13 +15,16 @@ import {
   TrendingUp, 
   X, 
   PlusCircle, 
-  MinusCircle 
+  MinusCircle,
+  FileSpreadsheet,
+  Download
 } from 'lucide-react';
 
 export const FinanceModule: React.FC = () => {
   const { 
     currentCashSession, 
     cashMovements, 
+    sales,
     openCashSession, 
     closeCashSession, 
     addCashMovement,
@@ -30,6 +34,7 @@ export const FinanceModule: React.FC = () => {
   const [isOpenModalOpen, setIsOpenModalOpen] = useState(false);
   const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
   const [isMovementModalOpen, setIsMovementModalOpen] = useState(false);
+  const [showExportSuccess, setShowExportSuccess] = useState(false);
 
   // Form states
   const [initialBalanceInput, setInitialBalanceInput] = useState(15000);
@@ -58,6 +63,22 @@ export const FinanceModule: React.FC = () => {
     e.preventDefault();
     closeCashSession(actualBalanceInput, sessionNotesInput);
     setIsCloseModalOpen(false);
+    if (currentCashSession) {
+      exportCashSessionToExcel(
+        { ...currentCashSession, actualBalance: actualBalanceInput, status: 'CLOSED' },
+        sales,
+        cashMovements
+      );
+      setShowExportSuccess(true);
+      setTimeout(() => setShowExportSuccess(false), 4000);
+    }
+  };
+
+  const handleExportExcel = () => {
+    if (!currentCashSession) return;
+    exportCashSessionToExcel(currentCashSession, sales, cashMovements);
+    setShowExportSuccess(true);
+    setTimeout(() => setShowExportSuccess(false), 4000);
   };
 
   const handleMovementSubmit = (e: React.FormEvent) => {
@@ -79,7 +100,18 @@ export const FinanceModule: React.FC = () => {
           <p className="text-xs text-slate-400">Supervisa el flujo de dinero, cobros con QR, tarjetas y el arqueo diario.</p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
+          {currentCashSession && (
+            <button
+              onClick={handleExportExcel}
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 text-xs font-bold border border-emerald-500/30 shadow-md transition-all active:scale-95"
+              title="Descargar reporte completo en Excel (.xlsx)"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              <span>Exportar a Excel</span>
+            </button>
+          )}
+
           {isSessionOpen ? (
             <>
               <button
@@ -111,6 +143,18 @@ export const FinanceModule: React.FC = () => {
           )}
         </div>
       </div>
+
+      {showExportSuccess && (
+        <div className="p-3 bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-semibold rounded-xl flex items-center justify-between animate-in fade-in">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <span>¡Reporte de Cierre de Caja exportado exitosamente a Excel (.xlsx)!</span>
+          </div>
+          <button onClick={() => setShowExportSuccess(false)} className="text-emerald-400 hover:text-white">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* Main KPI Cards Grid */}
       {currentCashSession ? (

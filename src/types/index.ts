@@ -6,6 +6,7 @@ export interface User {
   email: string;
   role: Role;
   avatarUrl?: string;
+  password?: string; // Clave de acceso para roles privilegiados
   createdAt: string;
 }
 
