@@ -210,11 +210,12 @@ export const POSModule: React.FC = () => {
         </div>
       </div>
 
-      {/* RIGHT PANEL: POS Checkout Cart */}
-      <div className="w-full lg:w-96 bg-slate-900/90 border border-slate-800 rounded-3xl p-5 flex flex-col justify-between shadow-2xl shrink-0">
-        <div>
+      {/* RIGHT PANEL: POS Checkout Cart (Fixed bottom action, scrollable middle) */}
+      <div className="w-full lg:w-96 bg-slate-900/90 border border-slate-800 rounded-3xl p-5 flex flex-col h-full max-h-full shadow-2xl shrink-0 overflow-hidden">
+        {/* Top Header & Customer Selector (Shrink 0) */}
+        <div className="shrink-0">
           {/* Cart Header */}
-          <div className="flex justify-between items-center pb-3 border-b border-slate-800 mb-3">
+          <div className="flex justify-between items-center pb-2.5 border-b border-slate-800 mb-2.5">
             <div className="flex items-center gap-2">
               <ShoppingCart className="w-5 h-5 text-indigo-400" />
               <h3 className="font-bold text-white text-base">Carrito de Venta</h3>
@@ -234,7 +235,7 @@ export const POSModule: React.FC = () => {
           </div>
 
           {/* Customer selection for sale */}
-          <div className="mb-3">
+          <div className="mb-2.5">
             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1 flex items-center gap-1">
               <UserCheck className="w-3 h-3 text-indigo-400" />
               Cliente (Opcional):
@@ -252,72 +253,72 @@ export const POSModule: React.FC = () => {
               ))}
             </select>
           </div>
-
-          {/* Cart items list */}
-          <div className="max-h-[30vh] overflow-y-auto space-y-2 pr-1">
-            {cart.length === 0 ? (
-              <div className="p-6 text-center text-slate-500 space-y-2">
-                <ShoppingCart className="w-8 h-8 mx-auto opacity-30" />
-                <p className="text-xs">El carrito está vacío.</p>
-                <p className="text-[11px] text-slate-600">Presiona [F2] para buscar un producto.</p>
-              </div>
-            ) : (
-              cart.map((item) => (
-                <div
-                  key={item.productId}
-                  className="bg-slate-950/80 p-2.5 rounded-2xl border border-slate-800 flex items-center justify-between gap-2.5"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-semibold text-white truncate">{item.productName}</p>
-                    <p className="text-[10px] text-slate-400 font-mono">
-                      ${item.unitPrice.toLocaleString('es-AR')} c/u
-                    </p>
-                  </div>
-
-                  {/* Quantity controls */}
-                  <div className="flex items-center gap-1 bg-slate-900 px-1.5 py-0.5 rounded-xl border border-slate-800">
-                    <button
-                      onClick={() => updateCartQuantity(item.productId, item.quantity - 1)}
-                      className="text-slate-400 hover:text-white p-0.5"
-                    >
-                      <Minus className="w-3 h-3" />
-                    </button>
-                    <span className="text-xs font-bold text-white w-4 text-center">{item.quantity}</span>
-                    <button
-                      onClick={() => updateCartQuantity(item.productId, item.quantity + 1)}
-                      className="text-slate-400 hover:text-white p-0.5"
-                    >
-                      <Plus className="w-3 h-3" />
-                    </button>
-                  </div>
-
-                  <div className="text-right min-w-[55px]">
-                    <p className="text-xs font-bold text-emerald-400">${item.subtotal.toLocaleString('es-AR')}</p>
-                  </div>
-
-                  <button
-                    onClick={() => removeFromCart(item.productId)}
-                    className="text-slate-500 hover:text-rose-400 transition-colors"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              ))
-            )}
-          </div>
         </div>
 
-        {/* Payment selector & Checkout action */}
-        <div className="space-y-3 pt-3 border-t border-slate-800 mt-2">
+        {/* Scrollable Cart Items List (Takes available height smoothly) */}
+        <div className="flex-1 min-h-0 overflow-y-auto space-y-2 pr-1 my-1">
+          {cart.length === 0 ? (
+            <div className="h-full min-h-[160px] flex flex-col items-center justify-center p-4 text-center text-slate-500 space-y-2">
+              <ShoppingCart className="w-8 h-8 opacity-30" />
+              <p className="text-xs">El carrito está vacío.</p>
+              <p className="text-[11px] text-slate-600">Presiona [F2] para buscar un producto.</p>
+            </div>
+          ) : (
+            cart.map((item) => (
+              <div
+                key={item.productId}
+                className="bg-slate-950/80 p-2.5 rounded-2xl border border-slate-800 flex items-center justify-between gap-2.5"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-white truncate">{item.productName}</p>
+                  <p className="text-[10px] text-slate-400 font-mono">
+                    ${item.unitPrice.toLocaleString('es-AR')} c/u
+                  </p>
+                </div>
+
+                {/* Quantity controls */}
+                <div className="flex items-center gap-1 bg-slate-900 px-1.5 py-0.5 rounded-xl border border-slate-800">
+                  <button
+                    onClick={() => updateCartQuantity(item.productId, item.quantity - 1)}
+                    className="text-slate-400 hover:text-white p-0.5"
+                  >
+                    <Minus className="w-3 h-3" />
+                  </button>
+                  <span className="text-xs font-bold text-white w-4 text-center">{item.quantity}</span>
+                  <button
+                    onClick={() => updateCartQuantity(item.productId, item.quantity + 1)}
+                    className="text-slate-400 hover:text-white p-0.5"
+                  >
+                    <Plus className="w-3 h-3" />
+                  </button>
+                </div>
+
+                <div className="text-right min-w-[55px]">
+                  <p className="text-xs font-bold text-emerald-400">${item.subtotal.toLocaleString('es-AR')}</p>
+                </div>
+
+                <button
+                  onClick={() => removeFromCart(item.productId)}
+                  className="text-slate-500 hover:text-rose-400 transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Pinned Bottom Payment & Checkout Section (Always Visible, Shrink 0) */}
+        <div className="shrink-0 space-y-2.5 pt-2.5 border-t border-slate-800 mt-auto">
           {/* Payment Method Selector */}
           <div>
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
               Método de Cobro
             </label>
             <div className="grid grid-cols-4 gap-1.5">
               <button
                 onClick={() => setPaymentMethod('CASH')}
-                className={`flex flex-col items-center gap-0.5 p-2 rounded-xl border text-[11px] font-semibold transition-all ${
+                className={`flex flex-col items-center gap-0.5 p-1.5 rounded-xl border text-[10px] font-semibold transition-all ${
                   paymentMethod === 'CASH'
                     ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-md shadow-emerald-500/10'
                     : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white'
@@ -329,7 +330,7 @@ export const POSModule: React.FC = () => {
 
               <button
                 onClick={() => setPaymentMethod('QR')}
-                className={`flex flex-col items-center gap-0.5 p-2 rounded-xl border text-[11px] font-semibold transition-all ${
+                className={`flex flex-col items-center gap-0.5 p-1.5 rounded-xl border text-[10px] font-semibold transition-all ${
                   paymentMethod === 'QR'
                     ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40 shadow-md shadow-cyan-500/10'
                     : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white'
@@ -341,7 +342,7 @@ export const POSModule: React.FC = () => {
 
               <button
                 onClick={() => setPaymentMethod('CARD')}
-                className={`flex flex-col items-center gap-0.5 p-2 rounded-xl border text-[11px] font-semibold transition-all ${
+                className={`flex flex-col items-center gap-0.5 p-1.5 rounded-xl border text-[10px] font-semibold transition-all ${
                   paymentMethod === 'CARD'
                     ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40 shadow-md shadow-indigo-500/10'
                     : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white'
@@ -353,7 +354,7 @@ export const POSModule: React.FC = () => {
 
               <button
                 onClick={() => setPaymentMethod('CREDIT')}
-                className={`flex flex-col items-center gap-0.5 p-2 rounded-xl border text-[11px] font-semibold transition-all ${
+                className={`flex flex-col items-center gap-0.5 p-1.5 rounded-xl border text-[10px] font-semibold transition-all ${
                   paymentMethod === 'CREDIT'
                     ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-md shadow-amber-500/10'
                     : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white'
@@ -367,7 +368,7 @@ export const POSModule: React.FC = () => {
 
           {/* Cash input & change calculator */}
           {paymentMethod === 'CASH' && (
-            <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800 space-y-1.5">
+            <div className="bg-slate-950 p-2 rounded-xl border border-slate-800 space-y-1">
               <div className="flex justify-between items-center text-xs">
                 <span className="text-slate-400">Paga con ($):</span>
                 <input
@@ -389,10 +390,10 @@ export const POSModule: React.FC = () => {
           )}
 
           {/* Total & Checkout Button with F4 shortcut */}
-          <div className="space-y-2 pt-1">
+          <div className="space-y-2 pt-0.5">
             <div className="flex justify-between items-baseline">
               <span className="text-xs font-semibold text-slate-300">Total a Cobrar:</span>
-              <span className="text-2xl font-black text-emerald-400 font-mono">
+              <span className="text-xl font-black text-emerald-400 font-mono">
                 ${cartTotal.toLocaleString('es-AR')}
               </span>
             </div>
@@ -400,7 +401,7 @@ export const POSModule: React.FC = () => {
             <button
               onClick={handleCheckout}
               disabled={cart.length === 0 || !isCashSessionOpen}
-              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-500 hover:to-emerald-500 text-white font-extrabold text-sm shadow-xl shadow-indigo-600/25 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-[0.99] flex items-center justify-center gap-2"
+              className="w-full py-3 rounded-2xl bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-500 hover:to-emerald-500 text-white font-extrabold text-sm shadow-xl shadow-indigo-600/25 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-[0.99] flex items-center justify-center gap-2"
             >
               <Sparkles className="w-4 h-4" />
               <span>
