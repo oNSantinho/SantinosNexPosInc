@@ -21,6 +21,7 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
         <h1 className="text-lg font-bold text-white tracking-tight capitalize">
           {activeTab === 'pos' && '🛒 Punto de Venta (POS)'}
           {activeTab === 'stock' && '📦 Control de Stock e Inventario'}
+          {activeTab === 'customers' && '👥 Clientes & Cuentas Corrientes (Fiados)'}
           {activeTab === 'suppliers' && '🚚 Gestión de Distribuidores'}
           {activeTab === 'finance' && '💰 Control de Dinero y Arqueo de Caja'}
           {activeTab === 'users' && '🔒 Usuarios y Permisos (RBAC)'}
@@ -80,38 +81,65 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
 
           {/* User selector modal dropdown */}
           {showUserDropdown && (
-            <div className="absolute right-0 mt-2 w-64 bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in slide-in-from-top-2">
-              <div className="px-3 py-2 border-b border-slate-800 mb-1">
-                <p className="text-xs font-semibold text-slate-400">Cambiar Rol / Usuario Activo</p>
-                <p className="text-[10px] text-slate-500">Prueba los permisos de seguridad RBAC</p>
-              </div>
+            <>
+              {/* Invisible click-outside backdrop */}
+              <div
+                className="fixed inset-0 z-40"
+                onClick={() => setShowUserDropdown(false)}
+              />
 
-              <div className="space-y-1">
-                {users.map((u) => (
-                  <button
-                    key={u.id}
-                    onClick={() => {
-                      setCurrentUser(u);
-                      setShowUserDropdown(false);
-                    }}
-                    className={`w-full flex items-center justify-between p-2 rounded-xl text-left transition-colors ${
-                      currentUser.id === u.id
-                        ? 'bg-indigo-600/20 border border-indigo-500/30 text-white'
-                        : 'hover:bg-slate-800 text-slate-300'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <UserIcon className="w-4 h-4 text-slate-400" />
-                      <div>
-                        <p className="text-xs font-medium text-white">{u.name}</p>
-                        <p className="text-[10px] text-slate-400">{u.email}</p>
-                      </div>
-                    </div>
-                    <RoleBadge role={u.role} showIcon={false} />
-                  </button>
-                ))}
+              <div className="absolute right-0 mt-2 w-80 bg-slate-900/95 backdrop-blur-xl border border-slate-700/80 rounded-2xl shadow-2xl p-2.5 z-50 animate-in fade-in zoom-in-95">
+                <div className="px-3 py-2 border-b border-slate-800 mb-1.5">
+                  <p className="text-xs font-bold text-slate-200">Cambiar Rol / Usuario Activo</p>
+                  <p className="text-[11px] text-slate-400">Prueba los permisos y restricciones RBAC</p>
+                </div>
+
+                <div className="space-y-1.5">
+                  {users.map((u) => {
+                    const isSelected = currentUser.id === u.id;
+                    return (
+                      <button
+                        key={u.id}
+                        onClick={() => {
+                          setCurrentUser(u);
+                          setShowUserDropdown(false);
+                        }}
+                        className={`w-full flex items-center justify-between p-2.5 rounded-xl text-left transition-all group ${
+                          isSelected
+                            ? 'bg-indigo-600/20 border border-indigo-500/40 text-white shadow-md shadow-indigo-600/10'
+                            : 'hover:bg-slate-800/80 text-slate-300 border border-transparent'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 min-w-0 flex-1 pr-2">
+                          {u.avatarUrl ? (
+                            <img
+                              src={u.avatarUrl}
+                              alt={u.name}
+                              className="w-8 h-8 rounded-full object-cover border border-slate-700 shrink-0"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-slate-800 text-slate-300 flex items-center justify-center font-bold text-xs shrink-0">
+                              {u.name.charAt(0)}
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-bold text-white truncate flex items-center gap-1.5">
+                              {u.name}
+                              {isSelected && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />
+                              )}
+                            </p>
+                            <p className="text-[10px] text-slate-400 truncate">{u.email}</p>
+                          </div>
+                        </div>
+
+                        <RoleBadge role={u.role} showIcon={false} />
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            </>
           )}
         </div>
       </div>

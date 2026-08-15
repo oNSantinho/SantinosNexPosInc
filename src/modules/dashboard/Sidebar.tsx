@@ -3,6 +3,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { 
   ShoppingCart, 
   Package, 
+  Users,
   Truck, 
   Wallet, 
   ShieldCheck, 
@@ -36,6 +37,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
       badgeColor: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
     },
     {
+      id: 'customers',
+      label: 'Clientes (Fiados)',
+      icon: Users,
+      badge: null,
+    },
+    {
       id: 'suppliers',
       label: 'Distribuidores',
       icon: Truck,
@@ -63,10 +70,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
         {/* Brand logo */}
         <div className="flex items-center gap-3 px-3 py-4 mb-6 border-b border-slate-800/80">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/25 text-white font-black text-xl">
-            N
+            S
           </div>
           <div>
-            <h2 className="font-extrabold text-white tracking-wide text-lg leading-tight">NexPOS</h2>
+            <h2 className="font-extrabold text-white tracking-wide text-base leading-tight">SantinoNexPOS</h2>
             <p className="text-[10px] text-indigo-400 font-semibold tracking-wider uppercase">ERP & Control Total</p>
           </div>
         </div>

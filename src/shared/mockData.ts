@@ -1,4 +1,4 @@
-import { Product, Supplier, User, CashSession } from '../types';
+import { Product, Supplier, User, CashSession, Customer } from '../types';
 
 export const INITIAL_USERS: User[] = [
   {
@@ -24,6 +24,45 @@ export const INITIAL_USERS: User[] = [
     role: 'CASHIER',
     avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
     createdAt: '2026-02-01T10:00:00Z',
+  },
+];
+
+export const INITIAL_CUSTOMERS: Customer[] = [
+  {
+    id: 'cust-1',
+    name: 'Constructora del Plata SRL',
+    phone: '+54 11 5522-9900',
+    email: 'compras@constructoradelplata.com',
+    dniOrTaxId: '30-71889922-4',
+    address: 'Av. Libertador 1820, Vicente López',
+    balance: 48500, // Deuda de $48.500
+    creditLimit: 250000,
+    notes: 'Cliente mayorista con cuenta corriente a 30 días.',
+    createdAt: '2026-01-10T11:00:00Z',
+  },
+  {
+    id: 'cust-2',
+    name: 'Esteban Martínez (Contratista)',
+    phone: '+54 11 4123-8877',
+    email: 'esteban.obras@gmail.com',
+    dniOrTaxId: '20-33445566-9',
+    address: 'Calle Mitre 450, San Isidro',
+    balance: 0, // Al día
+    creditLimit: 80000,
+    notes: 'Paga puntualmente cada viernes.',
+    createdAt: '2026-01-18T14:30:00Z',
+  },
+  {
+    id: 'cust-3',
+    name: 'Taller Mecánico El Pistón',
+    phone: '+54 11 4998-1122',
+    email: 'tallerelpiston@hotmail.com',
+    dniOrTaxId: '27-28991122-3',
+    address: 'Av. San Martín 3210, Caseros',
+    balance: 15400, // Deuda de $15.400
+    creditLimit: 100000,
+    notes: 'Retira con firma autorizada de Ramón.',
+    createdAt: '2026-02-01T09:15:00Z',
   },
 ];
 

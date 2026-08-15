@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { Product, PaymentMethod, Sale } from '../../types';
 import { QRPaymentModal } from '../payments/QRPaymentModal';
+import { ReceiptModal } from './ReceiptModal';
+import { soundEffects } from '../../shared/soundEffects';
 import { 
   ShoppingCart, 
   Search, 
@@ -11,17 +13,18 @@ import {
   DollarSign, 
   QrCode, 
   CreditCard, 
-  CheckCircle2, 
-  Printer, 
-  AlertTriangle, 
   X, 
-  Sparkles 
+  Sparkles,
+  UserCheck,
+  BookOpen,
+  Keyboard
 } from 'lucide-react';
 
 export const POSModule: React.FC = () => {
   const { 
     products, 
     cart, 
+    customers,
     addToCart, 
     removeFromCart, 
     updateCartQuantity, 
@@ -34,10 +37,35 @@ export const POSModule: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CASH');
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
   const [cashReceivedInput, setCashReceivedInput] = useState<number>(0);
   const [lastCompletedSale, setLastCompletedSale] = useState<Sale | null>(null);
 
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const isCashSessionOpen = currentCashSession?.status === 'OPEN';
+
+  // Global Keyboard Shortcuts (F2: Search, F4: Checkout, ESC: Clear)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'F2') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+      } else if (e.key === 'F4') {
+        e.preventDefault();
+        if (cart.length > 0 && isCashSessionOpen) {
+          handleCheckout();
+        }
+      } else if (e.key === 'Escape') {
+        if (searchTerm) {
+          setSearchTerm('');
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  });
 
   // Filter products
   const filteredProducts = products.filter((p) => {
@@ -53,11 +81,30 @@ export const POSModule: React.FC = () => {
   const cartTotal = cart.reduce((acc, item) => acc + item.subtotal, 0);
   const changeGiven = paymentMethod === 'CASH' && cashReceivedInput ? Math.max(0, cashReceivedInput - cartTotal) : 0;
 
+  const handleAddToCart = (product: Product) => {
+    if (product.stock <= 0) {
+      soundEffects.playErrorBeep();
+      return;
+    }
+    soundEffects.playBeep();
+    addToCart(product);
+  };
+
   const handleCheckout = () => {
-    if (cart.length === 0) return;
+    if (cart.length === 0) {
+      soundEffects.playErrorBeep();
+      return;
+    }
 
     if (!isCashSessionOpen) {
+      soundEffects.playErrorBeep();
       alert('Debes abrir el turno de caja antes de realizar ventas.');
+      return;
+    }
+
+    if (paymentMethod === 'CREDIT' && !selectedCustomerId) {
+      soundEffects.playErrorBeep();
+      alert('Debes seleccionar un cliente para registrar una venta a Cuenta Corriente (Fiado).');
       return;
     }
 
@@ -66,8 +113,9 @@ export const POSModule: React.FC = () => {
       return;
     }
 
-    const sale = completeSale(paymentMethod, cashReceivedInput);
+    const sale = completeSale(paymentMethod, cashReceivedInput, selectedCustomerId || undefined);
     if (sale) {
+      soundEffects.playCashChime();
       setLastCompletedSale(sale);
       setCashReceivedInput(0);
     }
@@ -79,15 +127,21 @@ export const POSModule: React.FC = () => {
       <div className="flex-1 flex flex-col space-y-4 min-w-0">
         {/* Search bar & Category Pills */}
         <div className="space-y-3 bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
-          <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-            <input
-              type="text"
-              placeholder="Buscar producto por nombre, SKU o código de barras (F2)..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
-            />
+          <div className="relative flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Buscar producto por nombre, SKU o código de barras..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-20 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+              />
+              <span className="absolute right-3 top-2 px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-[10px] font-mono font-bold text-slate-400 flex items-center gap-1">
+                <Keyboard className="w-3 h-3" /> F2
+              </span>
+            </div>
           </div>
         </div>
 
@@ -103,7 +157,7 @@ export const POSModule: React.FC = () => {
               return (
                 <button
                   key={product.id}
-                  onClick={() => addToCart(product)}
+                  onClick={() => handleAddToCart(product)}
                   disabled={isOutOfStock || !isCashSessionOpen}
                   className={`group relative text-left p-4 rounded-2xl border transition-all flex flex-col justify-between space-y-3 ${
                     isOutOfStock
@@ -160,12 +214,12 @@ export const POSModule: React.FC = () => {
       <div className="w-full lg:w-96 bg-slate-900/90 border border-slate-800 rounded-3xl p-5 flex flex-col justify-between shadow-2xl shrink-0">
         <div>
           {/* Cart Header */}
-          <div className="flex justify-between items-center pb-4 border-b border-slate-800 mb-3">
+          <div className="flex justify-between items-center pb-3 border-b border-slate-800 mb-3">
             <div className="flex items-center gap-2">
               <ShoppingCart className="w-5 h-5 text-indigo-400" />
               <h3 className="font-bold text-white text-base">Carrito de Venta</h3>
               <span className="text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-mono">
-                {cart.reduce((a, b) => a + b.quantity, 0)} items
+                {cart.reduce((a, b) => a + b.quantity, 0)}
               </span>
             </div>
 
@@ -179,45 +233,65 @@ export const POSModule: React.FC = () => {
             )}
           </div>
 
+          {/* Customer selection for sale */}
+          <div className="mb-3">
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1 flex items-center gap-1">
+              <UserCheck className="w-3 h-3 text-indigo-400" />
+              Cliente (Opcional):
+            </label>
+            <select
+              value={selectedCustomerId}
+              onChange={(e) => setSelectedCustomerId(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+            >
+              <option value="">Consumidor Final (Sin Cuenta)</option>
+              {customers.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name} {c.balance > 0 ? `(Debe: $${c.balance.toLocaleString('es-AR')})` : '(Al Día)'}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* Cart items list */}
-          <div className="max-h-[38vh] overflow-y-auto space-y-2 pr-1">
+          <div className="max-h-[30vh] overflow-y-auto space-y-2 pr-1">
             {cart.length === 0 ? (
-              <div className="p-8 text-center text-slate-500 space-y-2">
-                <ShoppingCart className="w-10 h-10 mx-auto opacity-30" />
+              <div className="p-6 text-center text-slate-500 space-y-2">
+                <ShoppingCart className="w-8 h-8 mx-auto opacity-30" />
                 <p className="text-xs">El carrito está vacío.</p>
-                <p className="text-[11px] text-slate-600">Haz clic en un producto para agregarlo.</p>
+                <p className="text-[11px] text-slate-600">Presiona [F2] para buscar un producto.</p>
               </div>
             ) : (
               cart.map((item) => (
                 <div
                   key={item.productId}
-                  className="bg-slate-950/80 p-3 rounded-2xl border border-slate-800 flex items-center justify-between gap-3"
+                  className="bg-slate-950/80 p-2.5 rounded-2xl border border-slate-800 flex items-center justify-between gap-2.5"
                 >
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-semibold text-white truncate">{item.productName}</p>
-                    <p className="text-[11px] text-slate-400 font-mono">
+                    <p className="text-[10px] text-slate-400 font-mono">
                       ${item.unitPrice.toLocaleString('es-AR')} c/u
                     </p>
                   </div>
 
                   {/* Quantity controls */}
-                  <div className="flex items-center gap-1.5 bg-slate-900 px-2 py-1 rounded-xl border border-slate-800">
+                  <div className="flex items-center gap-1 bg-slate-900 px-1.5 py-0.5 rounded-xl border border-slate-800">
                     <button
                       onClick={() => updateCartQuantity(item.productId, item.quantity - 1)}
-                      className="text-slate-400 hover:text-white"
+                      className="text-slate-400 hover:text-white p-0.5"
                     >
-                      <Minus className="w-3.5 h-3.5" />
+                      <Minus className="w-3 h-3" />
                     </button>
-                    <span className="text-xs font-bold text-white w-5 text-center">{item.quantity}</span>
+                    <span className="text-xs font-bold text-white w-4 text-center">{item.quantity}</span>
                     <button
                       onClick={() => updateCartQuantity(item.productId, item.quantity + 1)}
-                      className="text-slate-400 hover:text-white"
+                      className="text-slate-400 hover:text-white p-0.5"
                     >
-                      <Plus className="w-3.5 h-3.5" />
+                      <Plus className="w-3 h-3" />
                     </button>
                   </div>
 
-                  <div className="text-right min-w-[60px]">
+                  <div className="text-right min-w-[55px]">
                     <p className="text-xs font-bold text-emerald-400">${item.subtotal.toLocaleString('es-AR')}</p>
                   </div>
 
@@ -225,7 +299,7 @@ export const POSModule: React.FC = () => {
                     onClick={() => removeFromCart(item.productId)}
                     className="text-slate-500 hover:text-rose-400 transition-colors"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
               ))
@@ -234,76 +308,90 @@ export const POSModule: React.FC = () => {
         </div>
 
         {/* Payment selector & Checkout action */}
-        <div className="space-y-4 pt-4 border-t border-slate-800 mt-2">
+        <div className="space-y-3 pt-3 border-t border-slate-800 mt-2">
           {/* Payment Method Selector */}
           <div>
-            <label className="text-[11px] font-semibold text-slate-400 block mb-2">Método de Pago</label>
-            <div className="grid grid-cols-3 gap-2">
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
+              Método de Cobro
+            </label>
+            <div className="grid grid-cols-4 gap-1.5">
               <button
                 onClick={() => setPaymentMethod('CASH')}
-                className={`flex flex-col items-center gap-1 p-2.5 rounded-xl border text-xs font-semibold transition-all ${
+                className={`flex flex-col items-center gap-0.5 p-2 rounded-xl border text-[11px] font-semibold transition-all ${
                   paymentMethod === 'CASH'
-                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-lg shadow-emerald-500/10'
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-md shadow-emerald-500/10'
                     : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white'
                 }`}
               >
-                <DollarSign className="w-4 h-4" />
+                <DollarSign className="w-3.5 h-3.5" />
                 <span>Efectivo</span>
               </button>
 
               <button
                 onClick={() => setPaymentMethod('QR')}
-                className={`flex flex-col items-center gap-1 p-2.5 rounded-xl border text-xs font-semibold transition-all ${
+                className={`flex flex-col items-center gap-0.5 p-2 rounded-xl border text-[11px] font-semibold transition-all ${
                   paymentMethod === 'QR'
-                    ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40 shadow-lg shadow-cyan-500/10'
+                    ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40 shadow-md shadow-cyan-500/10'
                     : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white'
                 }`}
               >
-                <QrCode className="w-4 h-4" />
+                <QrCode className="w-3.5 h-3.5" />
                 <span>Pago QR</span>
               </button>
 
               <button
                 onClick={() => setPaymentMethod('CARD')}
-                className={`flex flex-col items-center gap-1 p-2.5 rounded-xl border text-xs font-semibold transition-all ${
+                className={`flex flex-col items-center gap-0.5 p-2 rounded-xl border text-[11px] font-semibold transition-all ${
                   paymentMethod === 'CARD'
-                    ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40 shadow-lg shadow-indigo-500/10'
+                    ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40 shadow-md shadow-indigo-500/10'
                     : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white'
                 }`}
               >
-                <CreditCard className="w-4 h-4" />
+                <CreditCard className="w-3.5 h-3.5" />
                 <span>Tarjeta</span>
+              </button>
+
+              <button
+                onClick={() => setPaymentMethod('CREDIT')}
+                className={`flex flex-col items-center gap-0.5 p-2 rounded-xl border text-[11px] font-semibold transition-all ${
+                  paymentMethod === 'CREDIT'
+                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-md shadow-amber-500/10'
+                    : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-white'
+                }`}
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                <span>Fiado</span>
               </button>
             </div>
           </div>
 
           {/* Cash input & change calculator */}
           {paymentMethod === 'CASH' && (
-            <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2">
+            <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800 space-y-1.5">
               <div className="flex justify-between items-center text-xs">
                 <span className="text-slate-400">Paga con ($):</span>
                 <input
                   type="number"
                   min="0"
-                  placeholder="Monto recibido..."
+                  placeholder="Monto..."
                   value={cashReceivedInput || ''}
                   onChange={(e) => setCashReceivedInput(Number(e.target.value))}
-                  className="w-28 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-right text-xs font-bold text-white"
+                  className="w-24 bg-slate-900 border border-slate-700 rounded-lg px-2 py-0.5 text-right text-xs font-bold text-white"
                 />
               </div>
               {cashReceivedInput > 0 && (
                 <div className="flex justify-between items-center text-xs pt-1 border-t border-slate-800">
-                  <span className="text-slate-400">Vuelto a Entregar:</span>
+                  <span className="text-slate-400">Vuelto:</span>
                   <span className="font-bold text-amber-400 font-mono">${changeGiven.toLocaleString('es-AR')}</span>
                 </div>
               )}
             </div>
           )}
 
-          {/* Total & Checkout Button */}
-          <div className="space-y-3 pt-2">
+          {/* Total & Checkout Button with F4 shortcut */}
+          <div className="space-y-2 pt-1">
             <div className="flex justify-between items-baseline">
-              <span className="text-sm font-semibold text-slate-300">Total a Cobrar:</span>
+              <span className="text-xs font-semibold text-slate-300">Total a Cobrar:</span>
               <span className="text-2xl font-black text-emerald-400 font-mono">
                 ${cartTotal.toLocaleString('es-AR')}
               </span>
@@ -312,61 +400,31 @@ export const POSModule: React.FC = () => {
             <button
               onClick={handleCheckout}
               disabled={cart.length === 0 || !isCashSessionOpen}
-              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-500 hover:to-emerald-500 text-white font-extrabold text-base shadow-xl shadow-indigo-600/25 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-[0.99] flex items-center justify-center gap-2"
+              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-500 hover:to-emerald-500 text-white font-extrabold text-sm shadow-xl shadow-indigo-600/25 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-[0.99] flex items-center justify-center gap-2"
             >
-              <Sparkles className="w-5 h-5" />
-              {paymentMethod === 'QR' ? 'Generar Código QR' : 'Completar Venta ($)'}
+              <Sparkles className="w-4 h-4" />
+              <span>
+                {paymentMethod === 'QR' 
+                  ? 'Generar Código QR' 
+                  : paymentMethod === 'CREDIT' 
+                  ? 'Cargar a Cuenta Corriente' 
+                  : 'Completar Venta ($)'}
+              </span>
+              <span className="px-1.5 py-0.5 rounded bg-black/20 text-[10px] font-mono font-bold">F4</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* QR PAYMENT MODAL INTEGRATION */}
+      {/* QR PAYMENT MODAL */}
       <QRPaymentModal totalAmount={cartTotal} />
 
-      {/* PRINT TICKET SUCCESS MODAL */}
+      {/* PRINTABLE THERMAL RECEIPT MODAL */}
       {lastCompletedSale && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-6 space-y-4 shadow-2xl text-center">
-            <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center mx-auto">
-              <CheckCircle2 className="w-7 h-7" />
-            </div>
-
-            <div>
-              <h3 className="font-bold text-white text-lg">¡Venta Registrada!</h3>
-              <p className="text-xs text-slate-400">Comprobante: {lastCompletedSale.code}</p>
-            </div>
-
-            <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs space-y-1 text-slate-300 text-left">
-              <div className="flex justify-between">
-                <span>Total:</span>
-                <span className="font-bold text-emerald-400">${lastCompletedSale.total.toLocaleString('es-AR')}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Método:</span>
-                <span className="font-semibold text-indigo-400">{lastCompletedSale.paymentMethod}</span>
-              </div>
-            </div>
-
-            <div className="flex gap-2 pt-2">
-              <button
-                onClick={() => setLastCompletedSale(null)}
-                className="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs"
-              >
-                Cerrar Ticket
-              </button>
-              <button
-                onClick={() => {
-                  alert(`Imprimiendo comprobante ${lastCompletedSale.code}...`);
-                  setLastCompletedSale(null);
-                }}
-                className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs flex items-center justify-center gap-1.5 shadow-lg"
-              >
-                <Printer className="w-3.5 h-3.5" /> Imprimir
-              </button>
-            </div>
-          </div>
-        </div>
+        <ReceiptModal
+          sale={lastCompletedSale}
+          onClose={() => setLastCompletedSale(null)}
+        />
       )}
     </div>
   );

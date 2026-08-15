@@ -31,6 +31,19 @@ export interface Supplier {
   createdAt: string;
 }
 
+export interface Customer {
+  id: string;
+  name: string;
+  phone: string;
+  email?: string;
+  dniOrTaxId?: string;
+  address?: string;
+  balance: number; // Positivo = Deuda del cliente con el local (Fiado), Negativo = Saldo a favor
+  creditLimit: number; // Límite de crédito fiado permitido
+  notes?: string;
+  createdAt: string;
+}
+
 export interface Product {
   id: string;
   sku: string;
@@ -62,7 +75,7 @@ export interface StockMovement {
   createdAt: string;
 }
 
-export type PaymentMethod = 'CASH' | 'QR' | 'CARD' | 'TRANSFER';
+export type PaymentMethod = 'CASH' | 'QR' | 'CARD' | 'TRANSFER' | 'CREDIT';
 
 export interface SaleItem {
   productId: string;
@@ -84,6 +97,8 @@ export interface Sale {
   cashReceived?: number;
   changeGiven?: number;
   qrTransactionId?: string;
+  customerId?: string;
+  customerName?: string;
   cashierId: string;
   cashierName: string;
   status: 'COMPLETED' | 'CANCELLED';
