@@ -29,7 +29,9 @@ interface AppState {
   // Auth & User Management
   currentUser: User;
   users: User[];
+  pendingAuthUser: User | null;
   setCurrentUser: (user: User) => void;
+  setPendingAuthUser: (user: User | null) => void;
   addUser: (user: Omit<User, 'id' | 'createdAt'>) => void;
   deleteUser: (id: string) => void;
 
@@ -85,7 +87,9 @@ export const useAppStore = create<AppState>()(
       // Auth state
       currentUser: INITIAL_USERS[0],
       users: INITIAL_USERS,
+      pendingAuthUser: null,
       setCurrentUser: (user) => set({ currentUser: user }),
+      setPendingAuthUser: (user) => set({ pendingAuthUser: user }),
       addUser: (userData) => {
         const newUser: User = {
           ...userData,

@@ -7,11 +7,12 @@ import { CustomersModule } from '../modules/customers/CustomersModule';
 import { SuppliersModule } from '../modules/suppliers/SuppliersModule';
 import { FinanceModule } from '../modules/finance/FinanceModule';
 import { UsersModule } from '../modules/users/UsersModule';
+import { PasswordPromptModal } from '../modules/auth/PasswordPromptModal';
 import { useAppStore } from '../store/useAppStore';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('pos');
-  const { currentUser } = useAppStore();
+  const { currentUser, pendingAuthUser, setCurrentUser, setPendingAuthUser } = useAppStore();
 
   const canAccessUsers = currentUser.role === 'ADMIN' || currentUser.role === 'MANAGER';
 
@@ -33,6 +34,18 @@ export const App: React.FC = () => {
           {activeTab === 'users' && (canAccessUsers ? <UsersModule /> : <POSModule />)}
         </main>
       </div>
+
+      {/* Global Centered Password Prompt Modal */}
+      {pendingAuthUser && (
+        <PasswordPromptModal
+          targetUser={pendingAuthUser}
+          onSuccess={() => {
+            setCurrentUser(pendingAuthUser);
+            setPendingAuthUser(null);
+          }}
+          onCancel={() => setPendingAuthUser(null)}
+        />
+      )}
     </div>
   );
 };

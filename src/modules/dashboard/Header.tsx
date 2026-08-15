@@ -10,9 +10,8 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
-  const { currentUser, users, setCurrentUser, currentCashSession } = useAppStore();
+  const { currentUser, users, setCurrentUser, currentCashSession, setPendingAuthUser } = useAppStore();
   const [showUserDropdown, setShowUserDropdown] = useState(false);
-  const [pendingUser, setPendingUser] = useState<any | null>(null);
 
   const isCashOpen = currentCashSession?.status === 'OPEN';
 
@@ -25,7 +24,7 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
     // Require password for ADMIN and MANAGER
     if (u.role === 'ADMIN' || u.role === 'MANAGER') {
       setShowUserDropdown(false);
-      setPendingUser(u);
+      setPendingAuthUser(u);
     } else {
       setCurrentUser(u);
       setShowUserDropdown(false);
@@ -162,18 +161,6 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
           )}
         </div>
       </div>
-
-      {/* Password verification prompt modal */}
-      {pendingUser && (
-        <PasswordPromptModal
-          targetUser={pendingUser}
-          onSuccess={() => {
-            setCurrentUser(pendingUser);
-            setPendingUser(null);
-          }}
-          onCancel={() => setPendingUser(null)}
-        />
-      )}
     </header>
   );
 };
